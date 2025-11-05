@@ -1,1 +1,8 @@
 psql postgresql://appuser:dbuser123@localhost:5001/myapp
+# JDBC URL for backend (Spring):
+# Set these env vars for prod profile:
+#   DB_URL=jdbc:postgresql://localhost:5001/myapp
+#   DB_USERNAME=appuser
+#   DB_PASSWORD=dbuser123
+# Or as a single URL (if supported by tooling):
+#   postgres://appuser:dbuser123@localhost:5001/myapp
