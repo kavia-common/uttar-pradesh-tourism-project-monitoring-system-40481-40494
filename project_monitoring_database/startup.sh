@@ -4,7 +4,7 @@
 DB_NAME="myapp"
 DB_USER="appuser"
 DB_PASSWORD="dbuser123"
-DB_PORT="5000"
+DB_PORT="5001"
 
 echo "Starting PostgreSQL setup..."
 
@@ -141,6 +141,34 @@ export POSTGRES_PASSWORD="${DB_PASSWORD}"
 export POSTGRES_DB="${DB_NAME}"
 export POSTGRES_PORT="${DB_PORT}"
 EOF
+
+# Apply schema migrations (schema/*.sql in lexical order)
+echo "Applying schema migrations..."
+SCHEMA_DIR="$(pwd)/schema"
+if [ -d "${SCHEMA_DIR}" ]; then
+  for file in $(ls "${SCHEMA_DIR}"/[0-9][0-9][0-9]_*.sql | sort); do
+    echo "-> Running $(basename "${file}")"
+    sudo -u postgres ${PG_BIN}/psql -v ON_ERROR_STOP=1 -p ${DB_PORT} -d ${DB_NAME} -f "${file}" >/dev/null
+    if [ $? -ne 0 ]; then
+      echo "Migration failed for ${file}"
+      exit 1
+    fi
+  done
+  echo "Schema migrations applied."
+else
+  echo "No schema directory found at ${SCHEMA_DIR} - skipping migrations."
+fi
+
+# Apply seed data for development
+SEED_DIR="$(pwd)/seed"
+SEED_FILE="${SEED_DIR}/seed_dev.sql"
+if [ -f "${SEED_FILE}" ]; then
+  echo "Applying seed data from ${SEED_FILE}..."
+  sudo -u postgres ${PG_BIN}/psql -v ON_ERROR_STOP=1 -p ${DB_PORT} -d ${DB_NAME} -f "${SEED_FILE}" >/dev/null || true
+  echo "Seed data applied."
+else
+  echo "No seed file found - skipping seed."
+fi
 
 echo "PostgreSQL setup complete!"
 echo "Database: ${DB_NAME}"
